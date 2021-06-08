@@ -61,3 +61,51 @@ function broadcastComment(data) {
 socket.on('comment', (data) => {
     appendToDom(data)
 })
+let timerId = null
+function debounce(func, timer) {
+    if (timerId) {
+        clearTimeout(timerId)
+    }
+    timerId = setTimeout(() => {
+        func()
+    }, timer)
+}
+
+let typingDiv = document.querySelector('.typing')
+socket.on('typing', (data) => {
+    typingDiv.innerText = `${data.username} is typing...`
+    debounce(function () {
+        typingDiv.innerText = ''
+    }, 1000)
+})
+
+// Event listner on textarea
+textarea.addEventListener('keyup', (e) => {
+    socket.emit('typing', { username })
+})
+
+// Api calls 
+
+function syncWithDb(data) {
+    const headers = {
+        'Content-Type': 'application/json'
+    }
+    fetch('/api/comments', { method: 'POST', body: JSON.stringify(data), headers })
+        .then(response => response.json())
+        .then(result => {
+            console.log(result)
+        })
+}
+
+function fetchComments() {
+    fetch('/api/comments')
+        .then(res => res.json())
+        .then(result => {
+            result.forEach((comment) => {
+                comment.time = comment.createdAt
+                appendToDom(comment)
+            })
+        })
+}
+
+window.onload = fetchComments
